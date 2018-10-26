@@ -2,7 +2,8 @@ package io.aicloud.tools.netty;
 
 import io.aicloud.tools.netty.util.NamedThreadFactory;
 import io.netty.channel.EventLoopGroup;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -16,7 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author fagongzi
  */
-@Data
+@Getter
+@Setter
 public class ConnectorOptions extends AbstractOptions {
     private boolean allowReconnect = false;
     private int heathCheckInterval = getReadTimeout() / 10;

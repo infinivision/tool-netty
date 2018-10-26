@@ -1,6 +1,7 @@
 package io.aicloud.tools.netty;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Description:
@@ -11,7 +12,8 @@ import lombok.Data;
  *
  * @author fagongzi
  */
-@Data
+@Getter
+@Setter
 public class Options extends AbstractOptions {
     private int ioThreads = Runtime.getRuntime().availableProcessors();
     private boolean allowTimeout = true;

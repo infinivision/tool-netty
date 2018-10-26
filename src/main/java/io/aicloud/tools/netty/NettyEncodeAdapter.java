@@ -24,6 +24,7 @@ public class NettyEncodeAdapter extends MessageToMessageEncoder<Object> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void encode(ChannelHandlerContext ctx, Object message, List<Object> out) throws Exception {
         if (message.getClass() == byte[].class) {
             out.add(Unpooled.wrappedBuffer((byte[]) message));

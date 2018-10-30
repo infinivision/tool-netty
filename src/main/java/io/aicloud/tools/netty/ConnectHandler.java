@@ -7,16 +7,18 @@ public interface ConnectHandler {
     /**
      * connect failed
      *
-     * @param ip   target ip
-     * @param port target port
+     * @param connector connector
+     * @param ip        target ip
+     * @param port      target port
      */
-    void onFailed(String ip, int port);
+    void onFailed(Connector connector, String ip, int port);
 
     /**
      * reconnected
      *
-     * @param ip   target ip
-     * @param port target port
+     * @param connector connector
+     * @param ip        target ip
+     * @param port      target port
      */
-    void onReconnected(String ip, int port);
+    void onReconnected(Connector connector, String ip, int port);
 }

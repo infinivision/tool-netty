@@ -102,14 +102,14 @@ public class Connector<T> implements IOSession<T> {
             options.getExecutor().scheduleAtFixedRate(() -> {
                 try {
                     if (!isConnected()) {
-                        options.getConnectHandler().onFailed(target.getHostName(), target.getPort());
+                        options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
                         if (options.isAllowReconnect()) {
                             connect0();
 
                             if (isConnected()) {
-                                options.getConnectHandler().onReconnected(target.getHostName(), target.getPort());
+                                options.getConnectHandler().onReconnected(this, target.getHostName(), target.getPort());
                             } else {
-                                options.getConnectHandler().onFailed(target.getHostName(), target.getPort());
+                                options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
                             }
                         }
                     }
@@ -200,7 +200,18 @@ public class Connector<T> implements IOSession<T> {
         }
     }
 
+    @ChannelHandler.Sharable
     class defaultConnectorHandler extends SimpleChannelInboundHandler<Object> {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            options.getChannelAware().onChannelConnected(ctx.channel());
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            options.getChannelAware().onChannelClosed(ctx.channel());
+        }
+
         @Override
         @SuppressWarnings("unchecked")
         protected void channelRead0(ChannelHandlerContext ctx, Object message) throws Exception {

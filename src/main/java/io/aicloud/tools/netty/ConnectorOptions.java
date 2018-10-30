@@ -26,11 +26,11 @@ public class ConnectorOptions extends AbstractOptions {
 
     private ConnectHandler connectHandler = new ConnectHandler() {
         @Override
-        public void onReconnected(String ip, int port) {
+        public void onReconnected(Connector connector, String ip, int port) {
         }
 
         @Override
-        public void onFailed(String ip, int port) {
+        public void onFailed(Connector connector, String ip, int port) {
         }
     };
     private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1,

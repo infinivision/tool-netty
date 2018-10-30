@@ -151,7 +151,7 @@ public class Connector<T> implements IOSession<T> {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
                         if (options.isDebug()) {
-                            p.addLast("log", new LoggingHandler(LogLevel.INFO));
+                            p.addLast("log", new LoggingHandler(LogLevel.DEBUG));
                         }
 
                         if (options.getHeartbeat() != null) {

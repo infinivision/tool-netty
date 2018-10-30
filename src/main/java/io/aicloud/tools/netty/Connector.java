@@ -83,7 +83,12 @@ public class Connector<T> implements IOSession<T> {
 
     @Override
     public boolean isConnected() {
-        return isConnected && null != channel && channel.isOpen() && channel.isActive();
+        lock.readLock().lock();
+        try {
+            return isConnected && null != channel && channel.isOpen() && channel.isActive();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     private void addServer(String ip, int port) {
@@ -124,17 +129,24 @@ public class Connector<T> implements IOSession<T> {
 
     @Override
     public void close() {
-        if (null != options.getGroup()) {
-            channel.close();
-            isConnected = false;
+        lock.writeLock().lock();
+        try {
+            if (null != bootstrap) {
+                channel.close();
+                isConnected = false;
+            }
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
     private void initConnector() {
+        lock.writeLock().lock();
         if (null != bootstrap) {
             channel.close();
             bootstrap = null;
         }
+        lock.writeLock().unlock();
 
         EventLoopGroup group = options.getGroup();
         if (null == group) {
@@ -181,11 +193,6 @@ public class Connector<T> implements IOSession<T> {
         try {
             ChannelFuture channelFuture = bootstrap.connect(target);
             channelFuture.await(options.getSocketTimeout());
-            isConnected = channelFuture.isSuccess();
-
-            if (isConnected) {
-                channel = channelFuture.channel();
-            }
         } catch (InterruptedException e) {
             // ignore
         }
@@ -204,6 +211,11 @@ public class Connector<T> implements IOSession<T> {
     class defaultConnectorHandler extends SimpleChannelInboundHandler<Object> {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            lock.writeLock().lock();
+            isConnected = true;
+            channel = ctx.channel();
+            lock.writeLock().unlock();
+
             options.getChannelAware().onChannelConnected(ctx.channel());
         }
 

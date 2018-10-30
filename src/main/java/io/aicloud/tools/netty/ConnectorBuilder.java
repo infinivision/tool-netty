@@ -17,8 +17,11 @@ public class ConnectorBuilder {
     private Server[] servers;
     private ConnectorOptions options = new ConnectorOptions();
 
-    public ConnectorBuilder(Server... servers) {
-        this.servers = servers;
+    public ConnectorBuilder(String... servers) {
+        this.servers = new Server[servers.length];
+        for (int i = 0; i < servers.length; i++) {
+            this.servers[i] = new Server(servers[i]);
+        }
     }
 
     public ConnectorBuilder debug(boolean debug) {
@@ -47,8 +50,9 @@ public class ConnectorBuilder {
         return this;
     }
 
-    public ConnectorBuilder allowReconnect(boolean allowReconnect) {
+    public ConnectorBuilder allowReconnect(boolean allowReconnect, int heathCheckIntervalSecs) {
         options.setAllowReconnect(allowReconnect);
+        options.setHeathCheckInterval(heathCheckIntervalSecs);
         return this;
     }
 

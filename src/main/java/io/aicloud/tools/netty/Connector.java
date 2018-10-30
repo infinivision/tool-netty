@@ -40,7 +40,7 @@ public class Connector<T> implements IOSession<T> {
     private int opts = 0;
     private InetSocketAddress target;
 
-    public Connector(ConnectorOptions options, Server... targets) {
+    Connector(ConnectorOptions options, Server... targets) {
         this.options = options;
         this.lock = new ReentrantReadWriteLock();
 
@@ -86,7 +86,7 @@ public class Connector<T> implements IOSession<T> {
         return isConnected && null != channel && channel.isOpen() && channel.isActive();
     }
 
-    public void addServer(String ip, int port) {
+    private void addServer(String ip, int port) {
         try {
             lock.writeLock().lock();
             this.availableTargets.add(new InetSocketAddress(ip, port));
@@ -114,6 +114,7 @@ public class Connector<T> implements IOSession<T> {
                         }
                     }
                 } catch (Throwable e) {
+                    // ignore
                 }
             }, options.getHeathCheckInterval(), options.getHeathCheckInterval(), TimeUnit.SECONDS);
         }
@@ -135,8 +136,8 @@ public class Connector<T> implements IOSession<T> {
             bootstrap = null;
         }
 
-        EventLoopGroup group = null;
-        if (null == options.getGroup()) {
+        EventLoopGroup group = options.getGroup();
+        if (null == group) {
             group = new NioEventLoopGroup(1);
         }
 
@@ -150,7 +151,7 @@ public class Connector<T> implements IOSession<T> {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline p = ch.pipeline();
                         if (options.isDebug()) {
-                            p.addLast("log", new LoggingHandler(LogLevel.DEBUG));
+                            p.addLast("log", new LoggingHandler(LogLevel.INFO));
                         }
 
                         if (options.getHeartbeat() != null) {
@@ -186,6 +187,7 @@ public class Connector<T> implements IOSession<T> {
                 channel = channelFuture.channel();
             }
         } catch (InterruptedException e) {
+            // ignore
         }
     }
 
@@ -200,8 +202,14 @@ public class Connector<T> implements IOSession<T> {
 
     class defaultConnectorHandler extends SimpleChannelInboundHandler<Object> {
         @Override
+        @SuppressWarnings("unchecked")
         protected void channelRead0(ChannelHandlerContext ctx, Object message) throws Exception {
             options.getChannelAware().messageReceived(ctx.channel(), message);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            options.getChannelAware().onChannelException(ctx.channel(), cause);
         }
 
         @Override

@@ -21,6 +21,14 @@ public interface ChannelAware<T> {
     void messageReceived(Channel channel, T message);
 
     /**
+     * uncaught exception
+     *
+     * @param channel channel
+     * @param cause   exception
+     */
+    void onChannelException(Channel channel, Throwable cause);
+
+    /**
      * channel closed
      *
      * @param channel channel

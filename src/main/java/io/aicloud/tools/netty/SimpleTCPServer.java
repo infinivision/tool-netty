@@ -124,11 +124,12 @@ public class SimpleTCPServer {
         }
 
         /**
-         * recv a message
+         * receive a message
          *
          * @param ctx     channel ctx
          * @param message message
          */
+        @SuppressWarnings("unchecked")
         private void messageReceived(ChannelHandlerContext ctx, Object message) {
             if (options.getChannelAware() != null) {
                 options.getChannelAware().messageReceived(ctx.channel(), message);

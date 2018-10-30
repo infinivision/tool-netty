@@ -1,7 +1,8 @@
 package io.aicloud.tools.netty;
 
 import io.aicloud.tools.netty.util.BytesUtils;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
@@ -19,7 +20,7 @@ import java.util.List;
 public class NettyEncodeAdapter extends MessageToMessageEncoder<Object> {
     private AbstractOptions options;
 
-    public NettyEncodeAdapter(AbstractOptions options) {
+    NettyEncodeAdapter(AbstractOptions options) {
         this.options = options;
     }
 
@@ -27,11 +28,22 @@ public class NettyEncodeAdapter extends MessageToMessageEncoder<Object> {
     @SuppressWarnings("unchecked")
     protected void encode(ChannelHandlerContext ctx, Object message, List<Object> out) throws Exception {
         if (message.getClass() == byte[].class) {
-            out.add(Unpooled.wrappedBuffer((byte[]) message));
+            out.add(message);
         } else {
-            byte[] data = options.getCodec().encode(message);
-            byte[] length = BytesUtils.int2Byte(data.length);
-            out.add(Unpooled.wrappedBuffer(2, length, data));
+            CompositeByteBuf buf = ctx.alloc().compositeBuffer();
+            int writeIndex = 0;
+
+            ByteBuf data = options.getCodec().encode(ctx.alloc(), message);
+            buf.addComponent(data);
+            writeIndex += data.readableBytes();
+            buf.writerIndex(writeIndex);
+
+            data = ctx.alloc().buffer().writeBytes(BytesUtils.int2Byte(data.readableBytes()));
+            buf.addComponent(0, data);
+            writeIndex += data.readableBytes();
+            buf.writerIndex(writeIndex);
+
+            out.add(buf);
         }
     }
 }

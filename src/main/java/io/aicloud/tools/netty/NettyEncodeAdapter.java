@@ -17,16 +17,15 @@ import java.util.List;
  *
  * @author fagongzi
  */
-public class NettyEncodeAdapter extends MessageToMessageEncoder<Object> {
-    private AbstractOptions options;
+public class NettyEncodeAdapter<T> extends MessageToMessageEncoder<T> {
+    private AbstractOptions<T> options;
 
-    NettyEncodeAdapter(AbstractOptions options) {
+    NettyEncodeAdapter(AbstractOptions<T> options) {
         this.options = options;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    protected void encode(ChannelHandlerContext ctx, Object message, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, T message, List<Object> out) throws Exception {
         if (message.getClass() == byte[].class) {
             out.add(message);
         } else {

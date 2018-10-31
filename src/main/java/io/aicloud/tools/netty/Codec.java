@@ -29,5 +29,4 @@ public interface Codec<T> {
      * @return bytes value
      */
     ByteBuf encode(ByteBufAllocator allocator, T value);
-
 }

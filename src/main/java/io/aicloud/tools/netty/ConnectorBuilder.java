@@ -13,9 +13,9 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @author fagongzi
  */
-public class ConnectorBuilder {
+public class ConnectorBuilder<T> {
     private Server[] servers;
-    private ConnectorOptions options = new ConnectorOptions();
+    private ConnectorOptions<T> options = new ConnectorOptions<>();
 
     public ConnectorBuilder(String... servers) {
         this.servers = new Server[servers.length];
@@ -24,64 +24,64 @@ public class ConnectorBuilder {
         }
     }
 
-    public ConnectorBuilder debug(boolean debug) {
+    public ConnectorBuilder<T> debug(boolean debug) {
         options.setDebug(debug);
         return this;
     }
 
-    public ConnectorBuilder socketSendAndRecvBuffer(int recv, int send) {
+    public ConnectorBuilder<T> socketSendAndRecvBuffer(int recv, int send) {
         options.setSocketReadBuffer(recv);
         options.setSocketWriteBuffer(send);
         return this;
     }
 
-    public ConnectorBuilder socketBacklog(int backlog) {
+    public ConnectorBuilder<T> socketBacklog(int backlog) {
         options.setSocketBacklog(backlog);
         return this;
     }
 
-    public ConnectorBuilder socketTimeoutSeconds(int timeout) {
+    public ConnectorBuilder<T> socketTimeoutSeconds(int timeout) {
         options.setSocketTimeout(timeout);
         return this;
     }
 
-    public ConnectorBuilder maxPacketBodySize(int size) {
+    public ConnectorBuilder<T> maxPacketBodySize(int size) {
         options.setMaxBodySize(size);
         return this;
     }
 
-    public ConnectorBuilder allowReconnect(boolean allowReconnect, int heathCheckIntervalSecs) {
+    public ConnectorBuilder<T> allowReconnect(boolean allowReconnect, int heathCheckIntervalSecs) {
         options.setAllowReconnect(allowReconnect);
         options.setHeathCheckInterval(heathCheckIntervalSecs);
         return this;
     }
 
-    public ConnectorBuilder codec(Codec codec) {
+    public ConnectorBuilder<T> codec(Codec<T> codec) {
         options.setCodec(codec);
         return this;
     }
 
-    public ConnectorBuilder channelAware(ChannelAware aware) {
+    public ConnectorBuilder<T> channelAware(ChannelAware<T> aware) {
         options.setChannelAware(aware);
         return this;
     }
 
-    public ConnectorBuilder eventGroup(EventLoopGroup group) {
+    public ConnectorBuilder<T> eventGroup(EventLoopGroup group) {
         options.setGroup(group);
         return this;
     }
 
-    public ConnectorBuilder connectHandler(ConnectHandler handler) {
+    public ConnectorBuilder<T> connectHandler(ConnectHandler handler) {
         options.setConnectHandler(handler);
         return this;
     }
 
-    public ConnectorBuilder executor(ScheduledExecutorService executor) {
+    public ConnectorBuilder<T> executor(ScheduledExecutorService executor) {
         options.setExecutor(executor);
         return this;
     }
 
-    public Connector build() {
-        return new Connector(options, servers);
+    public Connector<T> build() {
+        return new Connector<>(options, servers);
     }
 }

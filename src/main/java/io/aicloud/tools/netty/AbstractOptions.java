@@ -12,7 +12,7 @@ import lombok.Data;
  * @author fagongzi
  */
 @Data
-public abstract class AbstractOptions {
+abstract class AbstractOptions<T> {
     private boolean debug = false;
     private int socketBacklog = 100;
     private int socketReadBuffer = 1024;
@@ -23,6 +23,6 @@ public abstract class AbstractOptions {
     private int writeTimeout = 30;
     private int allTimeout = Math.max(getReadTimeout(), getWriteTimeout());
     private Object heartbeat;
-    private Codec codec;
-    private ChannelAware channelAware;
+    private Codec<T> codec;
+    private ChannelAware<T> channelAware;
 }

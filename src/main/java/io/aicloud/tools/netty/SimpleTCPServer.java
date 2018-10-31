@@ -20,16 +20,16 @@ import io.netty.handler.timeout.IdleStateHandler;
  *
  * @author fagongzi
  */
-public class SimpleTCPServer {
+public class SimpleTCPServer<T> {
     private String ip;
     private int port;
-    private Options options;
+    private Options<T> options;
 
     private ServerBootstrap bootstrap = new ServerBootstrap();
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private EventLoopGroup workerGroup;
 
-    SimpleTCPServer(String ip, int port, Options options) {
+    SimpleTCPServer(String ip, int port, Options<T> options) {
         this.options = options;
         this.ip = ip;
         this.port = port;
@@ -61,8 +61,8 @@ public class SimpleTCPServer {
 
                         p.addLast("binary-decode", new LengthFieldBasedFrameDecoder(options.getMaxBodySize(),
                                 0, 4, 0, 4));
-                        p.addLast("message-decode", new NettyDecodeAdapter(options));
-                        p.addLast("message-encode", new NettyEncodeAdapter(options));
+                        p.addLast("message-decode", new NettyDecodeAdapter<>(options));
+                        p.addLast("message-encode", new NettyEncodeAdapter<>(options));
                         p.addLast(new ReceivedHandler());
                     }
                 });
@@ -74,9 +74,9 @@ public class SimpleTCPServer {
         workerGroup.shutdownGracefully();
     }
 
-    class ReceivedHandler extends SimpleChannelInboundHandler<Object> {
+    class ReceivedHandler extends SimpleChannelInboundHandler<T> {
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, Object message) throws Exception {
+        protected void channelRead0(ChannelHandlerContext ctx, T message) throws Exception {
             messageReceived(ctx, message);
         }
 
@@ -129,8 +129,7 @@ public class SimpleTCPServer {
          * @param ctx     channel ctx
          * @param message message
          */
-        @SuppressWarnings("unchecked")
-        private void messageReceived(ChannelHandlerContext ctx, Object message) {
+        private void messageReceived(ChannelHandlerContext ctx, T message) {
             if (options.getChannelAware() != null) {
                 options.getChannelAware().messageReceived(ctx.channel(), message);
             }

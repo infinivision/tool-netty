@@ -15,10 +15,10 @@ import java.util.List;
  *
  * @author fagongzi
  */
-public class NettyDecodeAdapter extends MessageToMessageDecoder<ByteBuf> {
-    private AbstractOptions options;
+public class NettyDecodeAdapter<T> extends MessageToMessageDecoder<ByteBuf> {
+    private AbstractOptions<T> options;
 
-    public NettyDecodeAdapter(AbstractOptions options) {
+    NettyDecodeAdapter(AbstractOptions<T> options) {
         this.options = options;
     }
 

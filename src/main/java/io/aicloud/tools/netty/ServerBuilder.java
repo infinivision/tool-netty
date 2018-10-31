@@ -9,81 +9,81 @@ package io.aicloud.tools.netty;
  *
  * @author fagongzi
  */
-public class ServerBuilder {
+public class ServerBuilder<T> {
     private String ip;
     private int port;
-    private Options options = new Options();
+    private Options<T> options = new Options<>();
 
     public ServerBuilder(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }
 
-    public ServerBuilder debug(boolean debug) {
+    public ServerBuilder<T> debug(boolean debug) {
         options.setDebug(debug);
         return this;
     }
 
-    public ServerBuilder socketSendAndRecvBuffer(int recv, int send) {
+    public ServerBuilder<T> socketSendAndRecvBuffer(int recv, int send) {
         options.setSocketReadBuffer(recv);
         options.setSocketWriteBuffer(send);
         return this;
     }
 
-    public ServerBuilder socketBacklog(int backlog) {
+    public ServerBuilder<T> socketBacklog(int backlog) {
         options.setSocketBacklog(backlog);
         return this;
     }
 
-    public ServerBuilder socketTimeoutSeconds(int timeout) {
+    public ServerBuilder<T> socketTimeoutSeconds(int timeout) {
         options.setSocketTimeout(timeout);
         return this;
     }
 
-    public ServerBuilder maxPacketBodySize(int size) {
+    public ServerBuilder<T> maxPacketBodySize(int size) {
         options.setMaxBodySize(size);
         return this;
     }
 
-    public ServerBuilder readTimeoutSeconds(int timeout) {
+    public ServerBuilder<T> readTimeoutSeconds(int timeout) {
         options.setAllowTimeout(true);
         options.setReadTimeout(timeout);
         return this;
     }
 
-    public ServerBuilder writeTimeoutSeconds(int timeout) {
+    public ServerBuilder<T> writeTimeoutSeconds(int timeout) {
         options.setAllowTimeout(true);
         options.setWriteTimeout(timeout);
         return this;
     }
 
-    public ServerBuilder heartbeat(Object heartbeat) {
+    public ServerBuilder<T> heartbeat(Object heartbeat) {
         options.setAllowTimeout(true);
         options.setHeartbeat(heartbeat);
         return this;
     }
 
-    public ServerBuilder codec(Codec codec) {
+    public ServerBuilder<T> codec(Codec<T> codec) {
         options.setCodec(codec);
         return this;
     }
 
-    public ServerBuilder channelAware(ChannelAware aware) {
+    public ServerBuilder<T> channelAware(ChannelAware<T> aware) {
         options.setChannelAware(aware);
         return this;
     }
 
-    public ServerBuilder ioProcessors(int count) {
+    public ServerBuilder<T> ioProcessors(int count) {
         options.setIoThreads(count);
         return this;
     }
 
-    public ServerBuilder timeoutHander(TimeoutHandler handler) {
+    public ServerBuilder<T> timeoutHander(TimeoutHandler handler) {
         options.setTimeoutHandler(handler);
         return this;
     }
 
-    public SimpleTCPServer build() {
-        return new SimpleTCPServer(ip, port, options);
+    public SimpleTCPServer<T> build() {
+        return new SimpleTCPServer<>(ip, port, options);
     }
 }

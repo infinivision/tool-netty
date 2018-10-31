@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 @Getter
 @Setter
-public class ConnectorOptions extends AbstractOptions {
+class ConnectorOptions<T> extends AbstractOptions<T> {
     private boolean allowReconnect = false;
     private int heathCheckInterval = getReadTimeout() / 10;
     private EventLoopGroup group;

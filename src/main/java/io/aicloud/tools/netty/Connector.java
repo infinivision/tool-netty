@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author fagongzi
  */
 public class Connector<T> implements IOSession<T> {
-    private ConnectorOptions options;
+    private ConnectorOptions<T> options;
 
     private Bootstrap bootstrap;
     private Channel channel;
@@ -40,7 +40,7 @@ public class Connector<T> implements IOSession<T> {
     private int opts = 0;
     private InetSocketAddress target;
 
-    Connector(ConnectorOptions options, Server... targets) {
+    Connector(ConnectorOptions<T> options, Server... targets) {
         this.options = options;
         this.lock = new ReentrantReadWriteLock();
 
@@ -178,8 +178,8 @@ public class Connector<T> implements IOSession<T> {
 
                         p.addLast("binary-decode", new LengthFieldBasedFrameDecoder(options.getMaxBodySize(), 0, 4,
                                 0, 4));
-                        p.addLast("message-decode", new NettyDecodeAdapter(options));
-                        p.addLast("message-encode", new NettyEncodeAdapter(options));
+                        p.addLast("message-decode", new NettyDecodeAdapter<>(options));
+                        p.addLast("message-encode", new NettyEncodeAdapter<>(options));
                         p.addLast(channelHandler);
                     }
                 });
@@ -208,7 +208,7 @@ public class Connector<T> implements IOSession<T> {
     }
 
     @ChannelHandler.Sharable
-    class defaultConnectorHandler extends SimpleChannelInboundHandler<Object> {
+    class defaultConnectorHandler extends SimpleChannelInboundHandler<T> {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             lock.writeLock().lock();
@@ -225,8 +225,7 @@ public class Connector<T> implements IOSession<T> {
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        protected void channelRead0(ChannelHandlerContext ctx, Object message) throws Exception {
+        protected void channelRead0(ChannelHandlerContext ctx, T message) throws Exception {
             options.getChannelAware().messageReceived(ctx.channel(), message);
         }
 

@@ -14,7 +14,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class Options extends AbstractOptions {
+class Options<T> extends AbstractOptions<T> {
     private int ioThreads = Runtime.getRuntime().availableProcessors();
     private boolean allowTimeout = true;
     private TimeoutHandler timeoutHandler;

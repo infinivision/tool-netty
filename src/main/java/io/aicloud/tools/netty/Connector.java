@@ -10,6 +10,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author fagongzi
  */
+@Slf4j(topic = "net")
 public class Connector<T> implements IOSession<T> {
     private ConnectorOptions<T> options;
 
@@ -103,19 +105,20 @@ public class Connector<T> implements IOSession<T> {
     public boolean connect() {
         connect0();
 
-        if (isConnected()) {
+        if (options.isAllowReconnect()) {
             options.getExecutor().scheduleAtFixedRate(() -> {
                 try {
                     if (!isConnected()) {
+                        log.info("connection-{} retry to reconnect", target);
                         options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
-                        if (options.isAllowReconnect()) {
-                            connect0();
+                        connect0();
 
-                            if (isConnected()) {
-                                options.getConnectHandler().onReconnected(this, target.getHostName(), target.getPort());
-                            } else {
-                                options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
-                            }
+                        if (isConnected()) {
+                            log.info("connection-{} resumed", target);
+                            options.getConnectHandler().onReconnected(this, target.getHostName(), target.getPort());
+                        } else {
+                            log.warn("connection-{} reconnect failed", target);
+                            options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
                         }
                     }
                 } catch (Throwable e) {
@@ -134,6 +137,7 @@ public class Connector<T> implements IOSession<T> {
             if (null != bootstrap) {
                 channel.close();
                 isConnected = false;
+                log.info("connection-{} closed", target);
             }
         } finally {
             lock.writeLock().unlock();
@@ -187,10 +191,12 @@ public class Connector<T> implements IOSession<T> {
 
     private void connect0() {
         target = next();
+        log.info("connect target changed to {}", target);
 
         initConnector();
 
         try {
+            log.info("connection-{} start to connect", target);
             ChannelFuture channelFuture = bootstrap.connect(target);
             channelFuture.await(options.getSocketTimeout());
         } catch (InterruptedException e) {
@@ -216,6 +222,7 @@ public class Connector<T> implements IOSession<T> {
             channel = ctx.channel();
             lock.writeLock().unlock();
 
+            log.info("connection-{} is connected", target);
             options.getChannelAware().onChannelConnected(ctx.channel());
         }
 

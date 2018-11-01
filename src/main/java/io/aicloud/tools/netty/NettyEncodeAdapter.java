@@ -17,22 +17,19 @@ import java.util.List;
  *
  * @author fagongzi
  */
-public class NettyEncodeAdapter<T> extends MessageToMessageEncoder<T> {
+public class NettyEncodeAdapter<T> extends MessageToMessageEncoder<Object> {
     private AbstractOptions<T> options;
 
-    NettyEncodeAdapter(AbstractOptions<T> options) {
-        this.options = options;
-    }
-
+    @SuppressWarnings("unchecked")
     @Override
-    protected void encode(ChannelHandlerContext ctx, T message, List<Object> out) throws Exception {
+    protected void encode(ChannelHandlerContext ctx, Object message, List<Object> out) throws Exception {
         if (message.getClass() == byte[].class) {
             out.add(message);
         } else {
             CompositeByteBuf buf = ctx.alloc().compositeBuffer();
             int writeIndex = 0;
 
-            ByteBuf data = options.getCodec().encode(ctx.alloc(), message);
+            ByteBuf data = options.getCodec().encode(ctx.alloc(), (T) message);
             buf.addComponent(data);
             writeIndex += data.readableBytes();
             buf.writerIndex(writeIndex);
@@ -44,5 +41,9 @@ public class NettyEncodeAdapter<T> extends MessageToMessageEncoder<T> {
 
             out.add(buf);
         }
+    }
+
+    NettyEncodeAdapter(AbstractOptions<T> options) {
+        this.options = options;
     }
 }

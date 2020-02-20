@@ -1,7 +1,16 @@
 package io.aicloud.tools.netty;
 
+import io.aicloud.tools.netty.util.NamedThreadFactory;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -10,13 +19,14 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import lombok.extern.slf4j.Slf4j;
-
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Description:
@@ -35,7 +45,7 @@ public class Connector<T> implements IOSession<T> {
     private Channel channel;
     private boolean isConnected;
     private ChannelHandler channelHandler;
-
+    private ScheduledExecutorService executor;
     private ReentrantReadWriteLock lock;
 
     private final List<InetSocketAddress> availableTargets = new ArrayList<>();
@@ -45,6 +55,12 @@ public class Connector<T> implements IOSession<T> {
     Connector(ConnectorOptions<T> options, Server... targets) {
         this.options = options;
         this.lock = new ReentrantReadWriteLock();
+        this.executor = options.getExecutor();
+
+        if (executor == null) {
+            executor = Executors.newScheduledThreadPool(1,
+                new NamedThreadFactory("connector"));
+        }
 
         for (Server server : targets) {
             addServer(server.getIp(), server.getPort());
@@ -106,7 +122,7 @@ public class Connector<T> implements IOSession<T> {
         connect0();
 
         if (options.isAllowReconnect()) {
-            options.getExecutor().scheduleAtFixedRate(() -> {
+            executor.scheduleAtFixedRate(() -> {
                 try {
                     if (!isConnected()) {
                         log.info("connection-{} retry to reconnect", target);
@@ -137,6 +153,7 @@ public class Connector<T> implements IOSession<T> {
             if (null != bootstrap) {
                 channel.close();
                 isConnected = false;
+                executor.shutdownNow();
                 log.info("connection-{} closed", target);
             }
         } finally {
@@ -159,34 +176,34 @@ public class Connector<T> implements IOSession<T> {
 
         bootstrap = new Bootstrap();
         bootstrap.group(group).channel(NioSocketChannel.class)
-                .option(ChannelOption.SO_SNDBUF, options.getSocketWriteBuffer())
-                .option(ChannelOption.SO_RCVBUF, options.getSocketReadBuffer())
-                .option(ChannelOption.TCP_NODELAY, true)
-                .handler(new ChannelInitializer<SocketChannel>() {
-                    @Override
-                    public void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline p = ch.pipeline();
-                        if (options.isDebug()) {
-                            p.addLast("log", new LoggingHandler(LogLevel.DEBUG));
-                        }
-
-                        if (options.getHeartbeat() != null) {
-                            p.addLast(
-                                    "timeout",
-                                    new IdleStateHandler(options.getReadTimeout(),
-                                            options.getWriteTimeout(),
-                                            options.getAllTimeout(),
-                                            TimeUnit.MILLISECONDS));
-
-                        }
-
-                        p.addLast("binary-decode", new LengthFieldBasedFrameDecoder(options.getMaxBodySize(), 0, 4,
-                                0, 4));
-                        p.addLast("message-decode", new NettyDecodeAdapter<>(options));
-                        p.addLast("message-encode", new NettyEncodeAdapter<>(options));
-                        p.addLast(channelHandler);
+            .option(ChannelOption.SO_SNDBUF, options.getSocketWriteBuffer())
+            .option(ChannelOption.SO_RCVBUF, options.getSocketReadBuffer())
+            .option(ChannelOption.TCP_NODELAY, true)
+            .handler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                public void initChannel(SocketChannel ch) throws Exception {
+                    ChannelPipeline p = ch.pipeline();
+                    if (options.isDebug()) {
+                        p.addLast("log", new LoggingHandler(LogLevel.DEBUG));
                     }
-                });
+
+                    if (options.getHeartbeat() != null) {
+                        p.addLast(
+                            "timeout",
+                            new IdleStateHandler(options.getReadTimeout(),
+                                options.getWriteTimeout(),
+                                options.getAllTimeout(),
+                                TimeUnit.MILLISECONDS));
+
+                    }
+
+                    p.addLast("binary-decode", new LengthFieldBasedFrameDecoder(options.getMaxBodySize(), 0, 4,
+                        0, 4));
+                    p.addLast("message-decode", new NettyDecodeAdapter<>(options));
+                    p.addLast("message-encode", new NettyEncodeAdapter<>(options));
+                    p.addLast(channelHandler);
+                }
+            });
     }
 
     private void connect0() {
@@ -213,8 +230,7 @@ public class Connector<T> implements IOSession<T> {
         }
     }
 
-    @ChannelHandler.Sharable
-    class defaultConnectorHandler extends SimpleChannelInboundHandler<T> {
+    @ChannelHandler.Sharable class defaultConnectorHandler extends SimpleChannelInboundHandler<T> {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             lock.writeLock().lock();

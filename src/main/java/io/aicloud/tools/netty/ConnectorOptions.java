@@ -1,12 +1,9 @@
 package io.aicloud.tools.netty;
 
-import io.aicloud.tools.netty.util.NamedThreadFactory;
 import io.netty.channel.EventLoopGroup;
+import java.util.concurrent.ScheduledExecutorService;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Description:
@@ -18,8 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * @author fagongzi
  */
 @Getter
-@Setter
-class ConnectorOptions<T> extends AbstractOptions<T> {
+@Setter class ConnectorOptions<T> extends AbstractOptions<T> {
     private boolean allowReconnect = false;
     private int heathCheckInterval = getReadTimeout() / 10;
     private EventLoopGroup group;
@@ -33,6 +29,5 @@ class ConnectorOptions<T> extends AbstractOptions<T> {
         public void onFailed(Connector connector, String ip, int port) {
         }
     };
-    private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1,
-            new NamedThreadFactory("connector"));
+    private ScheduledExecutorService executor = null;
 }

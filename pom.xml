@@ -16,7 +16,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <java.version>1.8</java.version>
         <lombok.version>1.16.18</lombok.version>
-        <netty.version>4.0.23.Final</netty.version>
+        <netty.version>4.1.42.Final</netty.version>
         <logback.version>1.2.3</logback.version>
     </properties>
 

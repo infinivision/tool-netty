@@ -118,6 +118,32 @@ public class Connector<T> implements IOSession<T> {
         }
     }
 
+    private void doHealthCheck() {
+        try {
+            if (!isConnected()) {
+                log.info("connection-{} retry to reconnect", target);
+                options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
+                connect0();
+
+                if (isConnected()) {
+                    log.info("connection-{} resumed", target);
+                    options.getConnectHandler().onReconnected(this, target.getHostName(), target.getPort());
+                } else {
+                    log.warn("connection-{} reconnect failed", target);
+                    options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
+                }
+            }
+        } catch (Throwable e) {
+            // ignore
+        } finally {
+            triggerHealthCheck();
+        }
+    }
+
+    private void triggerHealthCheck() {
+        executor.schedule(this::doHealthCheck, options.getHeathCheckInterval(), TimeUnit.SECONDS);
+    }
+
     /**
      * do connect to servers
      *
@@ -131,26 +157,7 @@ public class Connector<T> implements IOSession<T> {
         }
 
         if (options.isAllowReconnect()) {
-            executor.scheduleAtFixedRate(() -> {
-                try {
-                    if (!isConnected()) {
-                        log.info("connection-{} retry to reconnect", target);
-                        options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
-                        connect0();
-                        log.info("connection-{} retry to reconnect after connect0", target);
-
-                        if (isConnected()) {
-                            log.info("connection-{} resumed", target);
-                            options.getConnectHandler().onReconnected(this, target.getHostName(), target.getPort());
-                        } else {
-                            log.warn("connection-{} reconnect failed", target);
-                            options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
-                        }
-                    }
-                } catch (Throwable e) {
-                    // ignore
-                }
-            }, options.getHeathCheckInterval(), options.getHeathCheckInterval(), TimeUnit.SECONDS);
+            triggerHealthCheck();
         }
 
         return isConnected();

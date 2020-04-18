@@ -118,8 +118,17 @@ public class Connector<T> implements IOSession<T> {
         }
     }
 
+    /**
+     * do connect to servers
+     *
+     * @return true if connected
+     */
     public boolean connect() {
-        connect0();
+        try {
+            connect0();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
 
         if (options.isAllowReconnect()) {
             executor.scheduleAtFixedRate(() -> {
@@ -128,6 +137,7 @@ public class Connector<T> implements IOSession<T> {
                         log.info("connection-{} retry to reconnect", target);
                         options.getConnectHandler().onFailed(this, target.getHostName(), target.getPort());
                         connect0();
+                        log.info("connection-{} retry to reconnect after connect0", target);
 
                         if (isConnected()) {
                             log.info("connection-{} resumed", target);
@@ -161,13 +171,18 @@ public class Connector<T> implements IOSession<T> {
         }
     }
 
-    private void initConnector() {
-        lock.writeLock().lock();
-        if (null != bootstrap) {
-            channel.close();
-            bootstrap = null;
+    private void initConnector() throws InterruptedException {
+        try {
+            lock.writeLock().lock();
+            if (null != bootstrap) {
+                if (channel != null) {
+                    channel.close().await().sync();
+                }
+                bootstrap = null;
+            }
+        } finally {
+            lock.writeLock().unlock();
         }
-        lock.writeLock().unlock();
 
         EventLoopGroup group = options.getGroup();
         if (null == group) {
@@ -206,19 +221,15 @@ public class Connector<T> implements IOSession<T> {
             });
     }
 
-    private void connect0() {
+    private void connect0() throws InterruptedException {
         target = next();
         log.info("connect target changed to {}", target);
 
         initConnector();
 
-        try {
-            log.info("connection-{} start to connect", target);
-            ChannelFuture channelFuture = bootstrap.connect(target);
-            channelFuture.await(options.getSocketTimeout());
-        } catch (InterruptedException e) {
-            // ignore
-        }
+        log.info("connection-{} start to connect", target);
+        ChannelFuture channelFuture = bootstrap.connect(target);
+        channelFuture.await(options.getSocketTimeout());
     }
 
     private InetSocketAddress next() {
